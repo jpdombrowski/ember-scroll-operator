@@ -49,11 +49,11 @@ export default Mixin.create({
    * now to resume watching scroll position.
    */
   setupController(...args) {
-    const [ controller ] = args;
+    const [ controller, _, transition ] = args;
 
     this._super(...args);
 
-    if (controller && (!this.get('fastboot') || !this.get('fastboot.isFastBoot'))) {
+    if (!this._isFirstTransition(transition) && controller && (!this.get('fastboot') || !this.get('fastboot.isFastBoot'))) {
       run.schedule('afterRender', null, () => {
         $(window).scrollTop(controller.getWithDefault('currentPosition', 0));
         this._attachEvents();
@@ -85,6 +85,15 @@ export default Mixin.create({
    */
   _didTransitionViaBackOrForward(transition) {
     return transition && transition.sequence > 1 && transition.hasOwnProperty('urlMethod');
+  },
+
+  /**
+   * Determine if transition is entry transition.
+   * The first transition should not scroll to top, in sites served by fastboot
+   * to prevent an unwatend jump back to top after DOM re-hydration.
+   */
+  _isFirstTransition(transition) {
+    return this.get('fastboot') && !this.get('fastboot.isFastBoot') && !transition.sequence;
   },
 
   /**
